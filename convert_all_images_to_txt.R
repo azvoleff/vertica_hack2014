@@ -25,11 +25,11 @@ image_files <- dir(input_dir,
 
 init_worker <- function() {
     library(Rcpp)
-    sourceCpp('build_txt.cpp')
+    sourceCpp('rast2txt.cpp')
     return(1)
 }
 
-# Need to compile the build_txt function on each node in cluster
+# Need to compile the rast2txt function on each node in cluster
 
 stopifnot(all(clusterCall(cl, init_worker), 1))
 
@@ -56,7 +56,7 @@ retvals <- foreach (image_file=iter(image_files),
         xy <- xyFromCell(image_stack, cell=seq(first_cell, last_cell))
 
         # Format text output
-        out <- build_txt(xy, image_bl, first_cell - 1)
+        out <- rast2txt(xy, image_bl, first_cell - 1)
 
         # The output columns for the predictor images are:
         # 'pixelnum', 'point', 'r1', 'r2','r3', 'r4','r5','r7', 'veg','vegmean', 
