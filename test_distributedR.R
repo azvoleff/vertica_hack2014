@@ -80,10 +80,13 @@ n_years <- as.numeric(sqlQuery(con, "select count(distinct datayear) from CI.pas
 # Note that bs_per_img needs to be a multiple of the number of columns in the 
 # raster itself (2088) so that it can be easily written out block-by-block by 
 # writeRaster.
+cols <- c(id_cols, pred_cols)
 bs_per_img <- 2e5
 bs_per_img <- bs_per_img - (bs_per_img %% 2088)
-all_imgs <- darray(dim=c(n_rows*n_years, 15),
-                   blocks=c(bs_per_img*n_years, 15), sparse=FALSE)
+rowsInBlock <- bs_per_img*n_years
+all_imgs <- darray(dim=c(n_rows*n_years, length(cols)),
+                   blocks=c(rowsInBlock, length(cols)), empty=TRUE)
+
 
 # Build darray including all images. Need to ensure each block of darray 
 # includes matched rows from the same pixels do this with SQL "order by".
@@ -94,19 +97,26 @@ all_imgs <- darray(dim=c(n_rows*n_years, 15),
 # the data into a darray and performing the calculations separately is only 
 # useful if there are further calculations to perform on the data.
 foreach(i, 1:npartitions(all_imgs),
-    init_allimgs <- function(x=splits(all_imgs, i), index=i) {
+    init_all_imgs <- function(x=splits(all_imgs, i), index=i, cols=cols, 
+                             bs_per_img=bs_per_img) {
         library(vRODBC)
         Sys.setenv(VERTICAINI="/home/alexz/vertica.ini")
         Sys.setenv(ODBCINI="/home/alexz/odbc.ini")
         con <- odbcConnect("hack14")
-        bs_per_img <- 2e5
-        bs_per_img <- bs_per_img - (bs_per_img %% 2088)
         start_row <- (index-1) * bs_per_img
         end_row <- index * bs_per_img
-        qry <- paste("select * from CI.pasoh_predictor where pixelid >=", 
-                     start_row, "and pixelid <", end_row, "order by pixelid,datayear")
-        x <- as.matrix(sqlQuery(con, qry))
+        cols_paste <- paste(cols, collapse=",")
+        qry <- paste("select", cols_paste,
+                     "from CI.pasoh_predictor where pixelid >=", start_row, 
+                     "and pixelid <", end_row,
+                     "order by pixelid,datayear")
+        con <- odbcConnect("hack14")
+        segment <- sqlQuery(con, qry)
         odbcClose(con)
+        x <- NULL
+        for (j in 1:length(cols)) {
+            x <- cbind(x, segment[[j]])
+        }
         update(x)
     })
 
@@ -120,8 +130,8 @@ foreach(i, 1:npartitions(all_imgs),
     calc_mean_r <-function(x=splits(all_imgs, i),
                            results=splits(mean_r, i),
                            index=i) {
-    # Select out only the reflectance rows x[, 3:9]. x[, 2] is the pixelid 
-    # column.
+    # Select out only the reflectance cols x[, 3:9]. x[, 1] is year, and x[, 2] 
+    # is the pixelid column.
     results <- as.matrix(aggregate(x[, 3:8], by=list(x[, 2]), FUN=mean, na.rm=TRUE))
     update(results)
 })
@@ -167,6 +177,7 @@ darray2tif <- function(x, xcols=c(2:ncol(x)), img_meta, filename, ...) {
 }
 
 img_meta <- sqlQuery(con, "select * from CI.spatial_ref where datayear=1990 and imgtype='predictors'")
+img_meta$nlayers <- 6
 mean_r_rast <- darray2tif(mean_r, xcols=c(2:ncol(mean_r)), img_meta=img_meta, 
                           filename='PSH_mean_r_test.tif', datatype='INT2S', 
                           overwrite=TRUE)
