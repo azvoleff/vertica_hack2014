@@ -18,12 +18,6 @@ pred_cols <- c("r1", "r2", "r3", "r4", "r5", "r7", "veg", "vegmean", "vegvar",
                "vegdis", "elev", "slop", "asp")
 
 ###############################################################################
-# Load an image into a matrix using vRODBC
-###############################################################################
-
-#img_1990 <- sqlQuery(con, "select * from CI.pasoh_predictor where datayear=1990 order by pixelid")
-
-###############################################################################
 # Test loading a single image into distributedR darray
 ###############################################################################
 
@@ -170,4 +164,3 @@ img_meta <- sqlQuery(con, "select * from CI.spatial_ref where datayear=1990 and 
 mean_r_rast <- darray2tif(mean_r, xcols=c(2:ncol(mean_r)), img_meta=img_meta, 
                           filename='PSH_mean_r_test.tif', datatype='INT2S', 
                           overwrite=TRUE)
-
