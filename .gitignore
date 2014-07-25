@@ -1,0 +1,13 @@
+.Rhistory
+.RData
+*.swp
+*.swo
+*.csv
+*.png
+*.rst
+*.rdb
+*.rdx
+*.o
+*.dll
+src-i386
+src-x64
