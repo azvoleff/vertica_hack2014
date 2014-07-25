@@ -6,9 +6,17 @@
 library(distributedR)
 library(vRODBC)
 #distributedR_start()
+Sys.setenv(VERTICAINI="/home/alexz/vertica.ini")
+Sys.setenv(ODBCINI="/home/alexz/odbc.ini")
+
 distributedR_start(cluster_conf='/opt/hp/distributedR/conf/cluster.xml')
 
 con <- odbcConnect("hack14")
+
+###############################################################################
+# Test db2darray
+###############################################################################
+
 
 ###############################################################################
 # Test loading a single image into distributedR darray
@@ -20,7 +28,7 @@ n_rows <- sqlQuery(con, "select count(*) from CI.pasoh_predictor where datayear=
 img_1990 <- darray(dim=c(n_rows, 15), blocks=c(1e5, 15), sparse=FALSE)
 
 # Load an image into a matrix using vRODBC
-#img_1990 <- sqlQuery(con, "select * from CI.pasoh_predictor where datayear=1990 order by rowid")
+img_1990 <- sqlQuery(con, "select * from CI.pasoh_predictor where datayear=1990 order by pixelnum")
 
 # Build darray
 foreach(i, 1:npartitions(img_1990),
@@ -31,9 +39,9 @@ foreach(i, 1:npartitions(img_1990),
         size <- 100000
         start_row <- (index-1) * size
         end_row <- index * size
-        qry <- paste("select * from CI.pasoh_predictor where rowid >=", 
-                     start_row, "and rowid <", end_row, " and datayear=1990 
-                     order by rowid")
+        qry <- paste("select * from CI.pasoh_predictor where pixelnum >=", 
+                     start_row, "and pixelnum <", end_row, " and datayear=1990 
+                     order by pixelnum")
         x <- as.matrix(sqlQuery(con, qry))
         odbcClose(con)
         update(x)
@@ -78,8 +86,8 @@ foreach(i, 1:npartitions(all_imgs),
         bs_per_img <- bs_per_img - (bs_per_img %% 2088)
         start_row <- (index-1) * bs_per_img
         end_row <- index * bs_per_img
-        qry <- paste("select * from CI.pasoh_predictor where rowid >=", 
-                     start_row, "and rowid <", end_row, "order by rowid,datayear")
+        qry <- paste("select * from CI.pasoh_predictor where pixelnum >=", 
+                     start_row, "and pixelnum <", end_row, "order by pixelnum,datayear")
         x <- as.matrix(sqlQuery(con, qry))
         odbcClose(con)
         update(x)
@@ -95,7 +103,7 @@ foreach(i, 1:npartitions(all_imgs),
     calc_mean_r <-function(x=splits(all_imgs, i),
                            results=splits(mean_r, i),
                            index=i) {
-    # Select out only the reflectance rows x[, 3:9]. x[, 2] is the rowid 
+    # Select out only the reflectance rows x[, 3:9]. x[, 2] is the pixelnum 
     # column.
     results <- as.matrix(aggregate(x[, 3:8], by=list(x[, 2]), FUN=mean, na.rm=TRUE))
     update(results)
@@ -115,7 +123,7 @@ library(raster)
 # @param x a darray. The first column should be the pixel number, starting from
 # zero, in row-major order.
 # @param xcols the column numbers from x that should be included in the output 
-# raster (excludes the rowid column by default).
+# raster (excludes the pixelnum column by default).
 # @param img_meta a data.frame with spatial referencing information for the 
 # outptu raster.
 # @param filename output filename
