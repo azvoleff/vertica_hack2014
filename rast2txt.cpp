@@ -7,7 +7,7 @@ using namespace Rcpp;
 
 // [[Rcpp::export]]
 
-Rcpp::CharacterVector build_txt(NumericMatrix XY, NumericMatrix VALS, long ID) {
+Rcpp::CharacterVector rast2txt(NumericMatrix XY, NumericMatrix VALS, long ID) {
     CharacterVector out(XY.nrow());
 
     for(int i=0; i < XY.nrow(); i++) {
