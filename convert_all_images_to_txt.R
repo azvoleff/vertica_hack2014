@@ -12,12 +12,13 @@ library(foreach)
 library(iterators)
 library(doParallel)
 
-cl <- makeCluster(6)
+cl <- makeCluster(4)
 registerDoParallel(cl)
 
-input_dir <- 'D:/azvoleff/Data/Landsat/LCLUC_Classifications'
-out_dir <- 'D:/azvoleff/Data/Landsat/Mosaic_targz_files'
-#input_dir <- 'H:/Data/Landsat/LCLUC_Classifications'
+# input_dir <- 'D:/azvoleff/Data/Landsat/LCLUC_Classifications'
+# out_dir <- 'D:/azvoleff/Data/Landsat/Mosaic_targz_files'
+input_dir <- 'O:/Data/Landsat/LCLUC_Classifications'
+out_dir <- 'O:/Data/Landsat/Mosaic_targz_files'
 
 image_files <- dir(input_dir,
                    pattern='_predictors(_masks)?.tif$', 
