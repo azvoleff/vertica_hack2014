@@ -121,9 +121,9 @@ head(getpartition(all_imgs, 1))
 mean_r <- darray(dim=c(n_rows, 7), blocks=c(bs_per_img, 7), sparse=FALSE)
 
 foreach(i, 1:npartitions(all_imgs),
-    calc_mean_r <-function(x=splits(all_imgs, i),
-                           results=splits(mean_r, i),
-                           index=i) {
+    calc_mean_r <- function(x=splits(all_imgs, i),
+                            results=splits(mean_r, i),
+                            index=i) {
     # Select out only the reflectance cols x[, 3:9]. x[, 1] is year, and x[, 2] 
     # is the pixelid column.
     results <- as.matrix(aggregate(x[, 3:8], by=list(x[, 2]), FUN=mean, na.rm=TRUE))
