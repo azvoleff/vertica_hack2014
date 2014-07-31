@@ -49,16 +49,28 @@ AND intermediate.datayear=PSH_landsat.year
 train_data <- sqlQuery(con, join_qry)
 head(train_data)
 
+# Ensure NA codes are handled properly
+train_data[train_data == -32768] <- NA
+
 distributedR_start(cluster_conf='/opt/hp/distributedR/conf/cluster.xml')
 message(date(), ": Started loading dframe")
 indep_data <- db2dframe("CI.PSH_predictor", pred_cols, "hack14")
 message(date(), ": Finished loading dframe")
+message(date(), ": Recoding NAs in dframe")
+# Recode NAs in the independent variables used for the predictions
+foreach(i, 1:npartitions(indep_data),
+    code_NAs <- function(x=splits(indep_data, i)) {
+        x[x == -32768] <- NA
+        update(x)
+    }
+)
+message(date(), ": Finished recoding NAs in dframe")
 
 message(date(), ": Training randomForest model")
-rfmodel <- hpdrandomForest(x=train_data[names(train_data) != "class"],
-                           y=train_data$class, importance=TRUE,
-                           nExecutor=4)
+rfmodel <- hpdrandomForest(class ~ ., data=train_data, importance=TRUE,
+                           nExecutor=4, na.action=na.omit)
 message(date(), ": finished training randomForest model")
+
 message(date(), ": Started predicting from randomForest model")
 res <- predictHPdRF(rfmodel, newdata=indep_data)
 message(date(), ": finished predicting from randomForest model")
