@@ -50,12 +50,15 @@ train_data <- sqlQuery(con, join_qry)
 head(train_data)
 
 distributedR_start(cluster_conf='/opt/hp/distributedR/conf/cluster.xml')
+message(date(), ": Started loading dframe")
+indep_data <- db2dframe("CI.PSH_predictor", pred_cols, "hack14")
+message(date(), ": Finished loading dframe")
+
+message(date(), ": Training randomForest model")
 rfmodel <- hpdrandomForest(x=train_data[names(train_data) != "class"],
                            y=train_data$class, importance=TRUE,
                            nExecutor=4)
-
-indep_data <- db2dframe("CI.PSH_predictor", pred_cols, "hack14")
-
-timestamp()
+message(date(), ": finished training randomForest model")
+message(date(), ": Started predicting from randomForest model")
 res <- predictHPdRF(rfmodel, newdata=indep_data)
-timestamp()
+message(date(), ": finished predicting from randomForest model")
