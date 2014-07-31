@@ -8,18 +8,54 @@ Sys.setenv(ODBCINI="/home/alexz/odbc.ini")
 
 library(distributedR)
 library(vRODBC)
+library(HPdclassifier) # for hpdrandomForest
+library(HPdata) # for db2dframe
 
 id_cols <- c("pixelid",
              "datayear")
 pred_cols <- c("r1", "r2", "r3", "r4", "r5", "r7", "veg", "vegmean", "vegvar", 
                "vegdis", "elev", "slop", "asp")
 
-library(rgdal)
-library(rgeos)
-
 con <- odbcConnect("hack14")
 
-pred_cols_paste <- paste(pred_cols, collapse=", ")
-a <- sqlQuery(con, "SELECT STV_Create_Index(polyid, poly_coords USING PARAMETERS index='tr_polys') OVER() FROM CI.PSH_landsat")
-b <- sqlQuery(con, "SELECT STV_Intersect(rowid, pixel_coord USING PARAMETERS index='tr_polys') OVER() AS (rowid, polyid) FROM CI.PSH_predictor")
-c <- sqlQuery(con, paste("SELECT", pred_cols_paste, "STV_Intersect(rowid, pixel_coord USING PARAMETERS index='tr_polys') OVER() AS (rowid, polyid) FROM CI.PSH_predictor")
+int_index_qry <- "
+SELECT STV_Create_Index(polyid, poly_coords USING PARAMETERS index='tr_polys')
+OVER()
+FROM CI.PSH_landsat"
+sqlQuery(con, int_index_qry)
+
+join_cols <- paste(c(pred_cols, "class"), collapse=", ")
+join_qry <- paste(
+"SELECT", join_cols,
+"FROM
+(
+    SELECT *
+    FROM CI.PSH_predictor
+    JOIN
+    (
+        SELECT STV_Intersect(rowid, pixel_coord USING PARAMETERS index='tr_polys')
+        OVER()
+        AS (rowid, polyid)
+        FROM CI.PSH_predictor
+    )
+    AS intersected_polys
+    ON CI.PSH_predictor.rowid=intersected_polys.rowid
+)
+AS intermediate
+JOIN CI.PSH_landsat
+ON intermediate.polyid=PSH_landsat.polyid
+AND intermediate.datayear=PSH_landsat.year
+")
+train_data <- sqlQuery(con, join_qry)
+head(train_data)
+
+distributedR_start(cluster_conf='/opt/hp/distributedR/conf/cluster.xml')
+rfmodel <- hpdrandomForest(x=train_data[names(train_data) != "class"],
+                           y=train_data$class, importance=TRUE,
+                           nExecutor=4)
+
+indep_data <- db2dframe("CI.PSH_predictor", pred_cols, "hack14")
+
+timestamp()
+res <- predictHPdRF(rfmodel, newdata=indep_data)
+timestamp()
