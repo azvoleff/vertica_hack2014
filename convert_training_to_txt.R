@@ -1,5 +1,7 @@
 # Running this script on the Pasoh imagery takes about 1 hour.
 
+library(stringr)
+
 library(foreach)
 library(iterators)
 
@@ -17,6 +19,10 @@ out_dir <- 'H:/Data/Landsat/Vertica_Hackathon/Training_targz_files'
 
 training_files <- dir(input_dir, pattern='_Landsat_Training_Data.shp', 
                       full.names=TRUE)
+
+sitecodes <- str_extract(basename(training_files), "^[a-zA-Z]{2,3}")
+
+training_files <- training_files[!(sitecodes %in% c("NNN", "KRP"))]
 
 img_metadata <- read.csv("Vertica_hackathon_image_metadata.csv", 
                          stringsAsFactors=FALSE)
