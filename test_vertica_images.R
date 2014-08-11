@@ -16,7 +16,7 @@ stopifnot(file_test("-d", out_dir))
 rasterOptions(tmpdir=file.path(out_dir))
 
 ###############################################################################
-# Make funnction to write raster from vertica to a geotiff file for offline 
+# Make function to write raster from vertica to a geotiff file for offline 
 # viewing.
 ###############################################################################
 
