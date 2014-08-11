@@ -52,7 +52,7 @@ head(train_data)
 # Ensure NA codes are handled properly
 train_data[train_data == -32768] <- NA
 
-distributedR_start(cluster_conf='/opt/hp/distributedR/conf/cluster.xml')
+distributedR_start(cluster_conf='/opt/hp/distributedR/conf/cluster_conf.xml')
 message(date(), ": Started loading dframe")
 indep_data <- db2dframe("CI.PSH_predictor", pred_cols, "hack14")
 message(date(), ": Finished loading dframe")

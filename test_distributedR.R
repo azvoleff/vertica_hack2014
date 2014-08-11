@@ -10,11 +10,10 @@ library(distributedR)
 library(vRODBC)
 
 #distributedR_start()
-distributedR_start(cluster_conf='/opt/hp/distributedR/conf/cluster.xml')
+distributedR_start(cluster_conf='/opt/hp/distributedR/conf/cluster_conf.xml')
 
-id_cols <- c("pixelid",
-             "datayear")
-pred_cols <- c("r1", "r2", "r3", "r4", "r5", "r7", "veg", "vegmean", "vegvar", 
+id_cols <- c("pixelid", "datayear")
+pred_cols <- c("r1", "r2", "r3", "r4", "r5", "r7", "veg", "vegmean", "vegvar",
                "vegdis", "elev", "slop", "asp")
 
 ###############################################################################
@@ -23,8 +22,8 @@ pred_cols <- c("r1", "r2", "r3", "r4", "r5", "r7", "veg", "vegmean", "vegvar",
 
 # Get number of rows in a single image
 con <- odbcConnect("hack14")
-#sqlQuery(con, "create view CI.pasoh_1990 as select * from CI.pasoh_predictor where datayear=1990")
-n_rows <- sqlQuery(con, "select count(*) from CI.pasoh_predictor where datayear=1990")
+#sqlQuery(con, "create view CI.pasoh_1990 as select * from CI.PSH_predictor where datayear=1990")
+n_rows <- sqlQuery(con, "select count(*) from CI.PSH_predictor where datayear=1990")
 
 # Build darray with this n_rows rows, and distribute in blocks of 100000 rows
 cols <- c(id_cols, pred_cols)
@@ -43,7 +42,7 @@ foreach(i, 1:npartitions(img_1990),
         end_row <- index * rowsInBlock
         cols_paste <- paste(cols, collapse=",")
         qry <- paste("select", cols_paste,
-                     "from CI.pasoh_predictor where pixelid >=", start_row, 
+                     "from CI.PSH_predictor where pixelid >=", start_row, 
                      "and pixelid <", end_row,
                      "and datayear=1990 order by pixelid")
         con <- odbcConnect("hack14")
@@ -64,9 +63,9 @@ head(getpartition(img_1990, 1))
 ###############################################################################
 
 # Get number of rows in a single image
-n_rows <- as.numeric(sqlQuery(con, "select count(*) from CI.pasoh_predictor where datayear=1990"))
+n_rows <- as.numeric(sqlQuery(con, "select count(*) from CI.PSH_predictor where datayear=1990"))
 # Get number of years of imagery in database
-n_years <- as.numeric(sqlQuery(con, "select count(distinct datayear) from CI.pasoh_predictor"))
+n_years <- as.numeric(sqlQuery(con, "select count(distinct datayear) from CI.PSH_predictor"))
 
 # Build darray with n_years*n_rows rows. Define number of rows per partition of 
 # darray in terms of a single image - so each block will actually have 
@@ -101,7 +100,7 @@ foreach(i, 1:npartitions(all_imgs),
         end_row <- index * bs_per_img
         cols_paste <- paste(cols, collapse=",")
         qry <- paste("select", cols_paste,
-                     "from CI.pasoh_predictor where pixelid >=", start_row, 
+                     "from CI.PSH_predictor where pixelid >=", start_row, 
                      "and pixelid <", end_row,
                      "order by pixelid,datayear")
         con <- odbcConnect("hack14")
