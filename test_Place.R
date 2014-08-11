@@ -21,7 +21,7 @@ con <- odbcConnect("hack14")
 int_index_qry <- "
 SELECT STV_Create_Index(polyid, poly_coords USING PARAMETERS index='tr_polys')
 OVER()
-FROM CI.PSH_landsat"
+FROM CI.CI_PSH_training"
 sqlQuery(con, int_index_qry)
 
 join_cols <- paste(c(pred_cols, "class"), collapse=", ")
@@ -42,9 +42,9 @@ join_qry <- paste(
     ON CI.PSH_predictor.rowid=intersected_polys.rowid
 )
 AS intermediate
-JOIN CI.PSH_landsat
-ON intermediate.polyid=PSH_landsat.polyid
-AND intermediate.datayear=PSH_landsat.year
+JOIN CI.CI_PSH_training
+ON intermediate.polyid=CI_PSH_training.polyid
+AND intermediate.datayear=CI_PSH_training.year
 ")
 train_data <- sqlQuery(con, join_qry)
 head(train_data)
@@ -56,6 +56,7 @@ distributedR_start(cluster_conf='/opt/hp/distributedR/conf/cluster_conf.xml')
 message(date(), ": Started loading dframe")
 indep_data <- db2dframe("CI.PSH_predictor", pred_cols, "hack14")
 message(date(), ": Finished loading dframe")
+
 message(date(), ": Recoding NAs in dframe")
 # Recode NAs in the independent variables used for the predictions
 foreach(i, 1:npartitions(indep_data),
@@ -74,3 +75,6 @@ message(date(), ": finished training randomForest model")
 message(date(), ": Started predicting from randomForest model")
 res <- predictHPdRF(rfmodel, newdata=indep_data)
 message(date(), ": finished predicting from randomForest model")
+
+# 'res' object now has the prediction results stored as a dframe (a
+# distributedR object)
