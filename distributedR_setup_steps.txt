@@ -1,14 +1,25 @@
-1) Master and all nodes must be able to ssh to 127.0.0.1 under user's account without any prompts or passwords (have to accept new ssh key warning on each machine)
+1) Master and all nodes must be able to ssh to 127.0.0.1 under user's account 
+   without any prompts or passwords (have to accept new ssh key warning on each 
+   machine)
 
-2) User's account must be able to ssh to master and all nodes with no passwords or prompts
+2) User's account must be able to ssh to master and all nodes with no passwords 
+   or prompts
 
-3) odbc.ini and vertica.ini must be present in the same location on master and on all nodes
+3) odbc.ini and vertica.ini must be present in the same location on master and 
+   on all nodes
 
-4) VERTICAINI and ODBCINI environment variables giving the location of the above ini files must be set in user's .bashrc on master and on all nodes
+4) VERTICAINI and ODBCINI environment variables giving the location of the 
+   above ini files must be set in user's .bashrc on master and on all nodes
 
-5) If any of the above setup is not completed, the user may be able to run dR successfully off the master node, but not across the cluster. This will most likely result in an error message from distributed R saying: "distributedR Exception: first argument is not an open vRODBC channel"
+5) If any of the above setup is not completed, the user may be able to run dR 
+   successfully off the master node, but not across the cluster. This will most 
+   likely result in an error message from distributed R saying: "distributedR 
+   Exception: first argument is not an open vRODBC channel"
 
-6) If a user is using RStudio, they must include the following code (with the proper paths) prior to running "library(vRODBC)" in their R scripts. They must also include these lines at the top of any foreach loops that run code on the worker nodes:
+6) If a user is using RStudio, they must include the following code (with the 
+   proper paths) prior to running "library(vRODBC)" in their R scripts. They 
+   must also include these lines (with appropriate path to ini files) at the 
+   top of any foreach loops that run code on the worker nodes:
 
-Sys.setenv(VERTICAINI="/home/alexz/vertica.ini")
-Sys.setenv(ODBCINI="/home/alexz/odbc.ini")
+    Sys.setenv(VERTICAINI="/home/alexz/vertica.ini")
+    Sys.setenv(ODBCINI="/home/alexz/odbc.ini")
